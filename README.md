@@ -16,10 +16,6 @@ python SLIC/SLIC.py # Change the file path to the actual path
 ```
 python Time_series/extract_time.py # The parameters are set to default values, and if necessary, modify the configuration parameters
 ```
-- Generating time series data of noise maps during diffusion sampling
-```
-python Time_series/extract_time.py # The parameters are set to default values, and if necessary, modify the configuration parameters
-```
 
 - Generating 𝐷𝐹𝑎𝑐𝑡𝑜𝑟
 ```
