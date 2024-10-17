@@ -12,14 +12,24 @@ In the first stage, temporal change information for each semantic block, corresp
 ```
 python SLIC/SLIC.py # Change the file path to the actual path
 ```
-- Generate time series data of noise maps during diffusion sampling
+- Generating time series data of noise maps during diffusion sampling
 ```
 python Time_series/extract_time.py # The parameters are set to default values, and if necessary, modify the configuration parameters
 ```
-- Generate time series data of noise maps during diffusion sampling
+- Generating time series data of noise maps during diffusion sampling
 ```
 python Time_series/extract_time.py # The parameters are set to default values, and if necessary, modify the configuration parameters
+```
+
+- Generating 𝐷𝐹𝑎𝑐𝑡𝑜𝑟
+```
+DFactor_global/Run_learn_main.py # The parameters are set to default values, and if necessary, modify the configuration parameters
 ```
 ## Second stage: discrepancy detection via distribution fitting deviation
 Based on the 𝐷𝐹𝑎𝑐𝑡𝑜𝑟 extracted from the first stage, we perform distribution fitting deviation modeling on the data to be identified. Feature engineering is completed using distance, correlation, and matching metrics (c). With the extracted
 feature A𝑘, a classifier is trained for forgery identification.
+
+- Training and Testing
+```
+Train/Run_shell.py # The parameters are set to default values, and if necessary, modify the configuration parameters. run.py inherits the training and testing process
+```
