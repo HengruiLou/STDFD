@@ -4,3 +4,10 @@
 <p align="center"> 
 <img src="main.jpg">
 </p>
+
+## First stage: spatial-temporal information capture
+In the first stage, temporal change information for each semantic block, corresponding to the spatial superpixel, is firstly extracted (a). Then, we focus on extracting the 𝐷𝐹𝑎𝑐𝑡𝑜𝑟, which can distinguish between positive and negative samples during the sampling process. Next, global classification discriminative factors 𝐷𝐹𝑎𝑐𝑡𝑜𝑟 are constructed by identifying key changing segments that differentiate between the two types of samples (b).
+
+## Second stage: discrepancy detection via distribution fitting deviation
+Based on the 𝐷𝐹𝑎𝑐𝑡𝑜𝑟 extracted from the first stage, we perform distribution fitting deviation modeling on the data to be identified. Feature engineering is completed using distance, correlation, and matching metrics (c). With the extracted
+feature A𝑘, a classifier is trained for forgery identification.
