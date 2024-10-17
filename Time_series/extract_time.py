@@ -129,8 +129,8 @@ def process_folders(base_dir, output_file):
 # 遍历 segments1 到 segments40 文件夹并处理
 for segment_index in range(1, 11):
     # 设置 train_base_dir 和 train_output_file
-    train_base_dir = f'/data/usr/lhr/Time_shapelet/SLIC/eps_10/segments{segment_index}/Train'
-    train_output_file = f'/data/usr/lhr/Time_shapelet/Time_series/SSIM_eps_10/segments{segment_index}/Deepfacegen_TRAIN.tsv'
+    train_base_dir = f'/data/usr/lhr/Time_DFactor/SLIC/eps_10/segments{segment_index}/Train'
+    train_output_file = f'/data/usr/lhr/Time_DFactor/Time_series/SSIM_eps_10/segments{segment_index}/Deepfacegen_TRAIN.tsv'
     # 调用处理函数处理每个 segments 目录
     process_folders(train_base_dir, train_output_file)
 
@@ -139,7 +139,7 @@ for segment_index in range(1, 11):
 # 遍历 segments1 到 segments40 文件夹并处理
 for segment_index in range(1, 11):
     # 设置 train_base_dir 和 train_output_file
-    test_base_dir = f'/data/usr/lhr/Time_shapelet/SLIC/eps_10/segments{segment_index}/Test'
-    test_output_file = f'/data/usr/lhr/Time_shapelet/Time_series/SSIM_eps_10/segments{segment_index}/Deepfacegen_TEST.tsv'
+    test_base_dir = f'/data/usr/lhr/Time_DFactor/SLIC/eps_10/segments{segment_index}/Test'
+    test_output_file = f'/data/usr/lhr/Time_DFactor/Time_series/SSIM_eps_10/segments{segment_index}/Deepfacegen_TEST.tsv'
     # 调用处理函数处理每个 segments 目录
     process_folders(test_base_dir, test_output_file)

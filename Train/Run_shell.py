@@ -1,7 +1,7 @@
 import subprocess
 # 定义基础命令及参数
 base_command = [
-    "python", "/data/usr/lhr/Time_shapelet/Train/run.py", 
+    "python", "/data/usr/lhr/Time_DFactor/Train/run.py", 
     "--K", "10", 
     "--C", "100", 
     "--num_segment", "19", 

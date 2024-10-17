@@ -19,7 +19,7 @@ def softmax_np(x):
 
 def __candidate_cluster_factory(n_clusters, seg_length):
     """
-    generate shapelets candidates by clustering.
+    generate DFactors candidates by clustering.
     :param n_clusters:
     :param seg_length:
     :return:
@@ -36,7 +36,7 @@ def __candidate_cluster_factory(n_clusters, seg_length):
 
 def __candidate_greedy_factory(n_candiates, seg_length):
     """
-    generate shapelets candidates by greedy algorithms.
+    generate DFactors candidates by greedy algorithms.
     :param n_candiates:
     :param seg_length:
     :return:
@@ -65,9 +65,9 @@ def __candidate_greedy_factory(n_candiates, seg_length):
     return __main__
 
 
-def generate_shapelet_candidate(time_series_set, num_segment, seg_length, candidate_size, **kwargs):
+def generate_DFactor_candidate(time_series_set, num_segment, seg_length, candidate_size, **kwargs):
     """
-    generate shapelet candidates.
+    generate DFactor candidates.
     :param time_series_set:
     :param num_segment:
     :param seg_length:
@@ -79,7 +79,7 @@ def generate_shapelet_candidate(time_series_set, num_segment, seg_length, candid
     """
     __method, __debug = kwargs.get('candidate_method', 'greedy'), kwargs.get('debug', True)
     njobs = kwargs.get('njobs', NJOBS)
-    Debugger.debug_print('begin to generate shapelet candidates...', __debug)
+    Debugger.debug_print('begin to generate DFactor candidates...', __debug)
     num_time_series = time_series_set.shape[0]
     time_series_set = time_series_set.reshape(num_time_series, num_segment, seg_length, -1)
     assert candidate_size >= num_segment, 'candidate-size {} should be larger ' \
@@ -105,12 +105,12 @@ def generate_shapelet_candidate(time_series_set, num_segment, seg_length, candid
     return ret
 
 
-def __shapelet_distance_factory(shapelets, num_segment, seg_length, tflag,
+def __DFactor_distance_factory(DFactors, num_segment, seg_length, tflag,
                                 init, warp, dist, global_flag):
     """
-    factory for computing distances between shapelet and time series.
-    :param shapelets:
-        learned time-aware shapelets.
+    factory for computing distances between DFactor and time series.
+    :param DFactors:
+        learned time-aware DFactors.
     :param num_segment:
     :param seg_length:
     :param tflag:
@@ -126,18 +126,18 @@ def __shapelet_distance_factory(shapelets, num_segment, seg_length, tflag,
         ret = []
         for time_series in args:
             time_series = time_series.reshape(num_segment, seg_length, -1)
-            tmp = np.zeros((num_segment, len(shapelets)), dtype=np.float32)
+            tmp = np.zeros((num_segment, len(DFactors)), dtype=np.float32)
             if tflag and global_flag:
-                for idx, (pattern, local_factor, global_factor, _) in enumerate(shapelets):
+                for idx, (pattern, local_factor, global_factor, _) in enumerate(DFactors):
                     for k in range(num_segment):
                         tmp[k, idx] = dist(x=pattern, y=time_series[k],
                                            w=local_factor, warp=warp) * np.abs(global_factor[init + k])
             elif tflag and not global_flag:
-                for idx, (pattern, local_factor, global_factor, _) in enumerate(shapelets):
+                for idx, (pattern, local_factor, global_factor, _) in enumerate(DFactors):
                     for k in range(num_segment):
                         tmp[k, idx] = dist(x=pattern, y=time_series[k], w=local_factor, warp=warp)
             else:
-                for idx, (pattern, _) in enumerate(shapelets):
+                for idx, (pattern, _) in enumerate(DFactors):
                     for k in range(num_segment):
                         tmp[k, idx] = dist(x=pattern, y=time_series[k],
                                            w=np.ones(pattern.shape[0]), warp=warp)
@@ -147,12 +147,12 @@ def __shapelet_distance_factory(shapelets, num_segment, seg_length, tflag,
     return __main__
 
 
-def shapelet_distance(time_series_set, shapelets, seg_length, tflag, tanh, debug, init,
+def DFactor_distance(time_series_set, DFactors, seg_length, tflag, tanh, debug, init,
                       warp, measurement, global_flag):
     """
-    paralleling compute distances between time series and shapelets.
+    paralleling compute distances between time series and DFactors.
     :param time_series_set:
-    :param shapelets:
+    :param DFactors:
     :param seg_length:
     :param tflag:
     :param tanh:
@@ -166,7 +166,7 @@ def shapelet_distance(time_series_set, shapelets, seg_length, tflag, tanh, debug
     """
     num_time_series = time_series_set.shape[0]
     num_segment = int(time_series_set.shape[1] / seg_length)
-    num_shapelet = len(shapelets)
+    num_DFactor = len(DFactors)
     assert num_segment * seg_length == time_series_set.shape[1]
     if measurement == 'gw':
         dist = parameterized_gw_npy
@@ -175,26 +175,26 @@ def shapelet_distance(time_series_set, shapelets, seg_length, tflag, tanh, debug
     else:
         raise NotImplementedError('unsupported distance {}'.format(measurement))
     parmap = ParMap(
-        work=__shapelet_distance_factory(
-            shapelets=shapelets, num_segment=num_segment, seg_length=seg_length,
+        work=__DFactor_distance_factory(
+            DFactors=DFactors, num_segment=num_segment, seg_length=seg_length,
             tflag=tflag, init=init, warp=warp, dist=dist, global_flag=global_flag),
-        monitor=parallel_monitor(msg='shapelet distance', size=num_time_series, debug=debug),
+        monitor=parallel_monitor(msg='DFactor distance', size=num_time_series, debug=debug),
         njobs=NJOBS
     )
     sdist = np.array(parmap.run(data=list(time_series_set)), dtype=np.float32).reshape(
-        time_series_set.shape[0], num_segment, num_shapelet
+        time_series_set.shape[0], num_segment, num_DFactor
     )
     if tanh:
         sdist = np.tanh(sdist)
     return sdist
 
 
-def transition_matrix(time_series_set, shapelets, seg_length, tflag, multi_graph,
+def transition_matrix(time_series_set, DFactors, seg_length, tflag, multi_graph,
                       percentile, threshold, tanh, debug, init, warp, measurement, global_flag):
     """
-    compute shapelet transition matrix.
+    compute DFactor transition matrix.
     :param time_series_set:
-    :param shapelets:
+    :param DFactors:
     :param seg_length:
     :param tflag:
     :param multi_graph:
@@ -213,14 +213,14 @@ def transition_matrix(time_series_set, shapelets, seg_length, tflag, multi_graph
     """
     num_time_series = time_series_set.shape[0]
     num_segment = int(time_series_set.shape[1] / seg_length)
-    num_shapelet = len(shapelets)
+    num_DFactor = len(DFactors)
     if multi_graph:
         gcnt = num_segment - 1
     else:
         gcnt = 1
-    tmat = np.zeros((gcnt, num_shapelet, num_shapelet), dtype=np.float32)
-    sdist = shapelet_distance(
-        time_series_set=time_series_set, shapelets=shapelets, seg_length=seg_length, tflag=tflag,
+    tmat = np.zeros((gcnt, num_DFactor, num_DFactor), dtype=np.float32)
+    sdist = DFactor_distance(
+        time_series_set=time_series_set, DFactors=DFactors, seg_length=seg_length, tflag=tflag,
         tanh=tanh, debug=debug, init=init, warp=warp, measurement=measurement, global_flag=global_flag
     )
     if percentile is not None:
@@ -251,10 +251,10 @@ def transition_matrix(time_series_set, shapelets, seg_length, tflag, multi_graph
             '{:.2f}% transition matrix computed...'.format(float(tidx + 1) * 100 / num_time_series),
             debug=debug
         )
-    Debugger.info_print('{} edges involved in shapelets graph'.format(n_edges))
+    Debugger.info_print('{} edges involved in DFactors graph'.format(n_edges))
     tmat[tmat <= __tmat_threshold] = 0.0
     for k in range(gcnt):
-        for i in range(num_shapelet):
+        for i in range(num_DFactor):
             norms = np.sum(tmat[k, i, :])
             if norms == 0:
                 tmat[k, i, i] = 1.0
@@ -307,11 +307,11 @@ def __embedding2mat(fpath, num_vertices, embed_size):
     return mat
 
 
-def graph_embedding(tmat, num_shapelet, embed_size, cache_dir, **deepwalk_paras):
+def graph_embedding(tmat, num_DFactor, embed_size, cache_dir, **deepwalk_paras):
     """
-    conduct Deepwalk to generate shapelet embeddings.
+    conduct Deepwalk to generate DFactor embeddings.
     :param tmat:
-    :param num_shapelet:
+    :param num_DFactor:
     :param embed_size:
     :param cache_dir:
     :param deepwalk_paras:
@@ -336,6 +336,6 @@ def graph_embedding(tmat, num_shapelet, embed_size, cache_dir, **deepwalk_paras)
         deepwalk_cmd = ' '.join(deepwalk_cmd)
         Debugger.info_print('run deepwalk with: {}'.format(deepwalk_cmd))
         _ = syscmd(deepwalk_cmd)
-        ret.append(__embedding2mat(fpath=embedding_path, num_vertices=num_shapelet,
+        ret.append(__embedding2mat(fpath=embedding_path, num_vertices=num_DFactor,
                                    embed_size=embed_size))
-    return np.array(ret, dtype=np.float32).reshape(tmat.shape[0], num_shapelet, embed_size)
+    return np.array(ret, dtype=np.float32).reshape(tmat.shape[0], num_DFactor, embed_size)

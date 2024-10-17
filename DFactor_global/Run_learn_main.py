@@ -12,7 +12,7 @@ base_command = [
     "--percentile", "5", 
     "--gpu_enable", 
     "--quantitative", "SSIM_eps_10",
-    '--output_path',"/data/usr/lhr/Time_shapelet/Shaplet_global/Shapelet_cache_10segfor2"
+    '--output_path',"/data/usr/lhr/Time_shapelet/DFactor_global/DFactor_cache_10segfor2"
 ]
 
 # 循环执行 --seg 参数为 segments1 到 segments40 的命令

@@ -12,7 +12,7 @@ def load_usr_dataset_by_name(fname, length,quantitative,seg):
         time series length that want to load in.
     :return:
     """
-    dir_path = '/data/usr/lhr/Time_shapelet/Time_series'
+    dir_path = '/data/usr/lhr/Time_DFactor/Time_series'
     #print(dir_path)
     assert path.isfile('{}/{}/{}/{}_TEST.tsv'.format(dir_path,quantitative,seg, fname)), '{} NOT EXIST in UCR!'.format(fname)
     train_data = pandas.read_csv('{}/{}/{}/{}_TRAIN.tsv'.format(dir_path,quantitative,seg, fname), sep='\t', header=None)

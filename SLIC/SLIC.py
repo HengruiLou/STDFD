@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 input_root = '/data/usr/lhr/SD_CODE/DIRE-main/guided-diffusion/eps'
 
 # 输出数据路径
-output_root = '/data/usr/lhr/Time_shapelet/SLIC/eps_10'
+output_root = '/data/usr/lhr/Time_DFactor/SLIC/eps_10'
 
 # 期望的超像素数量
 M = 25

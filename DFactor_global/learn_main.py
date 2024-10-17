@@ -18,7 +18,7 @@ from torch.distributions.normal import Normal
 from torch.utils.data import DataLoader
 from utils.base_utils import Queue
 from model_utils import *
-from shapelet_utils import *
+from dfactor_utils import *
 from distance_utils import *
 
 from sklearn.cluster import KMeans
@@ -89,7 +89,7 @@ def pattern_distance_torch(pattern, time_series, num_segment, seg_length,
 
 def __candidate_cluster_factory(n_clusters, seg_length):
     """
-    generate shapelets candidates by clustering.
+    generate DFactors candidates by clustering.
     :param n_clusters:
     :param seg_length:
     :return:
@@ -104,7 +104,7 @@ def __candidate_cluster_factory(n_clusters, seg_length):
     return __main__
 def __candidate_greedy_factory(n_candiates, seg_length):
     """
-    generate shapelets candidates by greedy algorithms.
+    generate DFactors candidates by greedy algorithms.
     :param n_candiates:
     :param seg_length:
     :return:
@@ -131,11 +131,11 @@ def __candidate_greedy_factory(n_candiates, seg_length):
             queue.put(0)
         return ret
     return __main__
-def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_length,
+def __DFactor_candidate_loss(cand, time_series_set, label, num_segment, seg_length,
                             data_size, p, lr, alpha, beta, num_batch, gpu_enable,
                             measurement, **kwargs):
     """
-    loss for learning time-aware shapelets.
+    loss for learning time-aware DFactors.
     :param cand:
     :param time_series_set:
     :param label:
@@ -175,7 +175,7 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
     elif optimizer == 'Adamax':
         optimizer = optim.Adamax
     else:
-        raise NotImplementedError('unsupported optimizer {} for time-aware shapelets learning'.format(optimizer))
+        raise NotImplementedError('unsupported optimizer {} for time-aware DFactors learning'.format(optimizer))
     optimizer = optimizer([local_factor_variable, global_factor_variable], lr=lr)
 
     while cnt < max_iters:
@@ -273,11 +273,11 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
 
 
 
-def __shapelet_candidate_loss_factory(time_series_set, label, num_segment,
+def __DFactor_candidate_loss_factory(time_series_set, label, num_segment,
                                     seg_length, data_size, p, lr, alpha, beta, num_batch,
                                     gpu_enable, measurement, **kwargs):
     """
-    paralleling compute shapelet losses.
+    paralleling compute DFactor losses.
     :param time_series_set:
     :param label:
     :param num_segment:
@@ -296,7 +296,7 @@ def __shapelet_candidate_loss_factory(time_series_set, label, num_segment,
     def __main__(pid, args, queue):
         ret = []
         for cand in args:
-            local_factor, global_factor, loss, main_loss, penalty = __shapelet_candidate_loss(
+            local_factor, global_factor, loss, main_loss, penalty = __DFactor_candidate_loss(
                 cand=cand, time_series_set=time_series_set, label=label, num_segment=num_segment,
                 seg_length=seg_length, data_size=data_size, p=p, lr=lr,
                 alpha=alpha, beta=beta, num_batch=num_batch, gpu_enable=gpu_enable,
@@ -307,9 +307,9 @@ def __shapelet_candidate_loss_factory(time_series_set, label, num_segment,
         return ret
     return __main__
 
-def generate_shapelet_candidate(time_series_set, num_segment, seg_length, candidate_size, **kwargs):
+def generate_DFactor_candidate(time_series_set, num_segment, seg_length, candidate_size, **kwargs):
     """
-    generate shapelet candidates.
+    generate DFactor candidates.
     :param time_series_set:
     :param num_segment:
     :param seg_length:
@@ -321,7 +321,7 @@ def generate_shapelet_candidate(time_series_set, num_segment, seg_length, candid
     """
     __method, __debug = kwargs.get('candidate_method', 'greedy'), kwargs.get('debug', True)
     njobs = kwargs.get('njobs', NJOBS)
-    Debugger.debug_print('begin to generate shapelet candidates...', __debug)
+    Debugger.debug_print('begin to generate DFactor candidates...', __debug)
     num_time_series = time_series_set.shape[0]
     time_series_set = time_series_set.reshape(num_time_series, num_segment, seg_length, -1)
     assert candidate_size >= num_segment, 'candidate-size {} should be larger ' \
@@ -346,18 +346,18 @@ def generate_shapelet_candidate(time_series_set, num_segment, seg_length, candid
     Debugger.info_print('totally {} candidates with shape {}'.format(len(ret), ret.shape))
     return ret
 
-def learn_time_aware_shapelets(time_series_set, label, K, C, num_segment, seg_length, data_size,
+def learn_time_aware_DFactors(time_series_set, label, K, C, num_segment, seg_length, data_size,
                             p, lr, alpha, beta, num_batch, gpu_enable, measurement, **kwargs):
     """
-    learn time-aware shapelets.
+    learn time-aware DFactors.
     :param time_series_set:
         input time series data.
     :param label:
         input label.
     :param K:
-        number of shapelets that finally learned.
+        number of DFactors that finally learned.
     :param C:
-        number of shapelet candidates in learning procedure.
+        number of DFactor candidates in learning procedure.
     :param num_segment:
     :param seg_length:
     :param data_size:
@@ -371,15 +371,15 @@ def learn_time_aware_shapelets(time_series_set, label, K, C, num_segment, seg_le
     :param kwargs:
     :return:
     """
-    cands = generate_shapelet_candidate(time_series_set=time_series_set, num_segment=num_segment,
+    cands = generate_DFactor_candidate(time_series_set=time_series_set, num_segment=num_segment,
                                         seg_length=seg_length, candidate_size=C, **kwargs)
     parmap = ParMap(
-        work=__shapelet_candidate_loss_factory(
+        work=__DFactor_candidate_loss_factory(
             time_series_set=time_series_set, label=label, num_segment=num_segment, seg_length=seg_length,
             data_size=data_size, p=p, lr=lr, alpha=alpha, beta=beta, num_batch=num_batch,
             gpu_enable=gpu_enable, measurement=measurement, **kwargs
         ),
-        monitor=parallel_monitor(msg='learning time-aware shapelets', size=len(cands),
+        monitor=parallel_monitor(msg='learning time-aware DFactors', size=len(cands),
                                     debug=kwargs.get('debug', True)),
         njobs=kwargs.get('njobs', NJOBS)
     )
@@ -390,7 +390,7 @@ def learn_time_aware_shapelets(time_series_set, label, K, C, num_segment, seg_le
     return sorted(ret, key=lambda x: x[-1])[:K]
 
 
-def learn_shapelets(x, y, num_segment, data_size, num_batch,
+def learn_DFactors(x, y, num_segment, data_size, num_batch,
                    kernel, K, C, seg_length,
                    opt_metric, init, gpu_enable,
                    warp, tflag, mode,
@@ -401,7 +401,7 @@ def learn_shapelets(x, y, num_segment, data_size, num_batch,
                    representation_size, 
                    scaled, norm, global_flag, n_splits):
     """
-    learn time-aware shapelets.
+    learn time-aware DFactors.
     :param x:
         input time series data.
     :param y:
@@ -418,30 +418,30 @@ def learn_shapelets(x, y, num_segment, data_size, num_batch,
     lr=1e-2
     assert x.shape[1] == num_segment * seg_length
     if tflag:
-        shapelets = learn_time_aware_shapelets(
+        DFactors = learn_time_aware_DFactors(
             time_series_set=x, label=y, K=K, C=C, p=p,
             num_segment=num_segment, seg_length=seg_length, data_size=data_size,
             lr=lr, alpha=alpha, beta=beta, num_batch=num_batch,
             measurement=measurement, gpu_enable=gpu_enable)
     else:
             raise NotImplementedError()
-    return shapelets
-def save_shapelets(self, fpath):
-    pickle.dump(self.shapelets, open(fpath, 'wb'))
+    return DFactors
+def save_DFactors(self, fpath):
+    pickle.dump(self.DFactors, open(fpath, 'wb'))
 
 
 if __name__ == '__main__':
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--dataset', type=str, default='ucr-Deepfacegen',help='ucr-Earthquakes/WormsTwoClass/Strawberry')
-    parser.add_argument('--K', type=int, default=100, help='number of shapelets extracted')
-    parser.add_argument('--C', type=int, default=800, help='number of shapelet candidates')
+    parser.add_argument('--K', type=int, default=100, help='number of DFactors extracted')
+    parser.add_argument('--C', type=int, default=800, help='number of DFactor candidates')
     parser.add_argument('--n_splits', type=int, default=5, help='number of splits in cross-validation')
     parser.add_argument('--num_segment', type=int, default=12, help='number of segment a time series is divided into')
     parser.add_argument('--seg_length', type=int, default=30, help='segment length')
     parser.add_argument('--njobs', type=int, default=8, help='number of threads in parallel')
     parser.add_argument('--data_size', type=int, default=1, help='data dimension of time series')
-    parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer used in time-aware shapelets learning')
+    parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer used in time-aware DFactors learning')
     parser.add_argument('--alpha', type=float, default=0.1, help='penalty parameter of local timing factor')
     parser.add_argument('--beta', type=float, default=0.05, help='penalty parameter of global timing factor')
     parser.add_argument('--init', type=int, default=0, help='init index of time series data')
@@ -449,7 +449,7 @@ if __name__ == '__main__':
     parser.add_argument('--opt_metric', type=str, default='accuracy', help='which metric to optimize in prediction')
     #parser.add_argument('--cache', action='store_true', default=False, help='whether to dump model to local file')
     parser.add_argument('--embed', type=str, default='aggregate',help='which embed strategy to use (aggregate/concatenate)')
-    parser.add_argument('--embed_size', type=int, default=256, help='embedding size of shapelets')
+    parser.add_argument('--embed_size', type=int, default=256, help='embedding size of DFactors')
     parser.add_argument('--warp', type=int, default=2, help='warping size in greedy-dtw')
     parser.add_argument('--cmethod', type=str, default='greedy',help='which algorithm to use in candidate generation (cluster/greedy)')
     parser.add_argument('--kernel', type=str, default='xgb', help='specify outer-classifier (default xgboost)')
@@ -462,7 +462,7 @@ if __name__ == '__main__':
     parser.add_argument('--no_global', action='store_false', default=True,help='whether to use global timing factors')
     parser.add_argument('--quantitative', type=str, default='Seq_SSIM',help='quantitative value')
     parser.add_argument('--seg', type=str, default='seg0',help='segment value')
-    parser.add_argument('--output_path', type=str, default='/data/usr/lhr/Time_shapelet/Shaplet_global/Shapelet_cache',help='保存路径')
+    parser.add_argument('--output_path', type=str, default='/data/usr/lhr/Time_DFactor/Shaplet_global/DFactor_cache',help='保存路径')
     args = parser.parse_args()
     Debugger.info_print('running with {}'.format(args.__dict__))
 
@@ -480,7 +480,7 @@ if __name__ == '__main__':
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
                                                                      len(y_test)))
 
-    learned_shapelets=learn_shapelets(
+    learned_DFactors=learn_DFactors(
                         x=x_train, y=y_train, num_segment=int(x_train.shape[1] / args.seg_length),
                         data_size=args.data_size, num_batch=int(x_train.shape[0] // args.batch_size),
                         kernel=args.kernel, K=args.K, C=args.C, seg_length=args.seg_length,
@@ -500,8 +500,8 @@ if __name__ == '__main__':
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
     
-    # 序列化并保存 learned_shapelets
+    # 序列化并保存 learned_DFactors
     with open(fpath, 'wb') as f:
-        pickle.dump(learned_shapelets, f)
+        pickle.dump(learned_DFactors, f)
 
-    print(f"Shapelets 已保存到 {fpath}")
+    print(f"DFactor 已保存到 {fpath}")

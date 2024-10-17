@@ -40,19 +40,19 @@ from scipy.signal import correlate
 def custom_accuracy_scorer(y_true, y_pred):
     return accuracy_score(y_true, y_pred)
 
-def load_and_cluster_shapelets(n_clusters, num_segments,cluster_enable):
+def load_and_cluster_DFactors(n_clusters, num_segments,cluster_enable):
     """
-    加载多个 .cache 文件中的 shapelet 并对其进行聚类
+    加载多个 .cache 文件中的 DFactor 并对其进行聚类
     :param n_clusters: 聚类的类别数量
     :param num_segments: 要加载的 .cache 文件的数量（从 segments1.cache 到 segmentsN.cache）
-    :return: 聚类中心和每个 shapelet 的标签
+    :return: 聚类中心和每个 DFactor 的标签
     """
-    # 初始化列表用于存储所有的 shapelet (cand)
-    all_shapelets = []
+    # 初始化列表用于存储所有的 DFactor (cand)
+    all_DFactors = []
 
-    # Step 1: 加载40个文件并提取shapelet (cand)
+    # Step 1: 加载40个文件并提取DFactor (cand)
     for segment_index in range(1, num_segments+1):  # segments1 到 segments40
-        fpath = f'/data/usr/lhr/Time_shapelet/Shaplet_global/Shapelet_cache_10segfor2/segments{segment_index}.cache'
+        fpath = f'/data/usr/lhr/Time_DFactor/Shaplet_global/DFactor_cache_10segfor2/segments{segment_index}.cache'
         
         # 检查文件是否存在
         if os.path.exists(fpath):
@@ -63,95 +63,95 @@ def load_and_cluster_shapelets(n_clusters, num_segments,cluster_enable):
                 # 提取第一个元组的第一个元素 (cand)
                 if len(data) > 0:
                     cand, local_factor, global_factor, loss = data[0]  # 只提取第一个元组
-                    all_shapelets.append(cand)  # 将 cand（shapelet）添加到列表中
+                    all_DFactors.append(cand)  # 将 cand（DFactor）添加到列表中
                     
-                    # 打印 shapelet 的信息
-                    #print(f"  文件 {fpath} 最优 shapelet (cand):  {cand}")
+                    # 打印 DFactor 的信息
+                    #print(f"  文件 {fpath} 最优 DFactor (cand):  {cand}")
                 else:
                     print(f"文件 {fpath} 中没有数据")
         else:
             print(f"文件 {fpath} 不存在")
     
-    # 检查是否有 shapelet 提取出来
-    if len(all_shapelets) == 0:
-        print("没有 shapelet 被提取出来。")
+    # 检查是否有 DFactor 提取出来
+    if len(all_DFactors) == 0:
+        print("没有 DFactor 被提取出来。")
         return None, None
 
-    # 将所有 shapelet 转换为 numpy 数组
-    all_shapelets_array = np.array(all_shapelets)
-    print(f"总共提取到 {len(all_shapelets_array)} 个 shapelet.")
+    # 将所有 DFactor 转换为 numpy 数组
+    all_DFactors_array = np.array(all_DFactors)
+    print(f"总共提取到 {len(all_DFactors_array)} 个 DFactor.")
     if cluster_enable:
-        # Step 2: 基于提取的 shapelet 进行聚类 (使用KMeans算法聚成 n_clusters 类)
+        # Step 2: 基于提取的 DFactor 进行聚类 (使用KMeans算法聚成 n_clusters 类)
         kmeans = KMeans(n_clusters=n_clusters, random_state=42)
         # 将三维数组重塑为二维数组
-        all_shapelets_array_reshaped = all_shapelets_array.reshape(num_segments, -1)
-        #print(all_shapelets_array_reshaped)
+        all_DFactors_array_reshaped = all_DFactors_array.reshape(num_segments, -1)
+        #print(all_DFactors_array_reshaped)
         # 进行聚类
-        kmeans.fit(all_shapelets_array_reshaped)
+        kmeans.fit(all_DFactors_array_reshaped)
 
-        # 聚类结果：每个 shapelet 的标签
+        # 聚类结果：每个 DFactor 的标签
         labels = kmeans.labels_
 
-        # 聚类中心：n_clusters 个聚类中心 (典型shapelet)
+        # 聚类中心：n_clusters 个聚类中心 (典型DFactor)
         cluster_centers = kmeans.cluster_centers_
         print("cluster_centers.shape",cluster_centers.shape)
         # Step 3: 返回聚类中心和标签
         print(f"聚类完成，生成了 {n_clusters} 个聚类中心。")
         return cluster_centers, labels
     else:
-        #print("all_shapelets_array",all_shapelets_array)
-        all_shapelets=all_shapelets_array.reshape(num_segments, -1)
-        #print("all_shapelets",all_shapelets)
-        return  all_shapelets , 0
+        #print("all_DFactors_array",all_DFactors_array)
+        all_DFactors=all_DFactors_array.reshape(num_segments, -1)
+        #print("all_DFactors",all_DFactors)
+        return  all_DFactors , 0
 
 
-def extract_shapelets(x_data, y_data, num_segment, segment_length):
+def extract_DFactors(x_data, y_data, num_segment, segment_length):
     """
-    从输入的时间序列数据中提取所有 shapelet，并保持与标签的关联。
+    从输入的时间序列数据中提取所有 DFactor，并保持与标签的关联。
     :param x_data: 时间序列数据，形状为 (N, S, 1)，N 为样本数，S 为时间序列长度
     :param y_data: 样本标签，形状为 (N,)
     :param num_segment: 切分的段数
     :param segment_length: 每段的长度
-    :return: shapelet_x_by_sample, shapelet_y_by_sample，每个样本的 shapelet 及其对应的标签
+    :return: DFactor_x_by_sample, DFactor_y_by_sample，每个样本的 DFactor 及其对应的标签
     """
     N, S, _ = x_data.shape  # N: 样本数, S: 时间序列长度
-    shapelet_x_by_sample = []  # 存储每条样本的 shapelet
-    shapelet_y_by_sample = []  # 存储每条样本对应的标签
+    DFactor_x_by_sample = []  # 存储每条样本的 DFactor
+    DFactor_y_by_sample = []  # 存储每条样本对应的标签
 
     # 遍历每个样本
     for i in range(N):
         sample = x_data[i].squeeze()  # 去掉最后的单通道维度 (S,)
         label = y_data[i]  # 对应的标签
-        sample_shapelets = []  # 存储当前样本的所有 shapelet
+        sample_DFactors = []  # 存储当前样本的所有 DFactor
 
         # 按照 num_segment 和 segment_length 切分每条样本
         for segment_idx in range(num_segment):
             start = segment_idx * segment_length
             end = start + segment_length
             if end <= S:  # 确保片段不超出边界
-                shapelet = sample[start:end]  # 提取 shapelet
-                sample_shapelets.append(shapelet)  # 保存 shapelet
+                DFactor = sample[start:end]  # 提取 DFactor
+                sample_DFactors.append(DFactor)  # 保存 DFactor
         
-        # 保存每个样本的所有 shapelet 和标签
-        shapelet_x_by_sample.append(sample_shapelets)
-        shapelet_y_by_sample.append(label)
+        # 保存每个样本的所有 DFactor 和标签
+        DFactor_x_by_sample.append(sample_DFactors)
+        DFactor_y_by_sample.append(label)
 
-    return shapelet_x_by_sample, shapelet_y_by_sample
+    return DFactor_x_by_sample, DFactor_y_by_sample
 
 
-def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euclidean', smash=1,cluster=False):
+def compute_feature_vectors(DFactor_x, DFactor_y, cluster_centers, metric='euclidean', smash=1,cluster=False):
     """
     计算每个样本的特征向量，将每个聚类中心的特征拼接成一个整体特征向量。
-    :param shapelet_x: 提取出的 Shapelet 数据，形状为 (num_shapelets * smash, shapelet_length)
-    :param shapelet_y: 对应的样本标签
-    :param cluster_centers: 聚类中心，形状为 (n_clusters, shapelet_length)
+    :param DFactor_x: 提取出的 DFactor 数据，形状为 (num_DFactors * smash, DFactor_length)
+    :param DFactor_y: 对应的样本标签
+    :param cluster_centers: 聚类中心，形状为 (n_clusters, DFactor_length)
     :param metric: 距离度量方法
     :param smash: 表示每个样本由多少块合并而成
     :return: feature_vectors (每个样本的特征向量) 和 labels (每个样本的标签)
     """
-    num_shapelets_total = len(shapelet_x)  # 总 shapelet 数量
-    origin_num = int(len(shapelet_y)/smash)  # 原始样本数量
-    print("总 shapelet 数量",num_shapelets_total)
+    num_DFactors_total = len(DFactor_x)  # 总 DFactor 数量
+    origin_num = int(len(DFactor_y)/smash)  # 原始样本数量
+    print("总 DFactor 数量",num_DFactors_total)
     print("原始样本数量",origin_num)
     n_clusters = cluster_centers.shape[0]  # 聚类中心数目
 
@@ -161,41 +161,41 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
     if cluster:
         # 遍历每个原始样本
         for i in range(origin_num):
-            shapelets = []  # 用于存储当前样本的 shapelet 块
+            DFactors = []  # 用于存储当前样本的 DFactor 块
 
-            # 按跨越 origin_num 的方式提取属于该样本的 shapelet
+            # 按跨越 origin_num 的方式提取属于该样本的 DFactor
             for j in range(smash):
-                #print("原始标签:{},跨越 origin_num标签是{}".format(shapelet_y[i],shapelet_y[i + j * origin_num]))
-                shapelets.append(shapelet_x[i + j * origin_num])  # 提取该样本的 shapelet 块
+                #print("原始标签:{},跨越 origin_num标签是{}".format(DFactor_y[i],DFactor_y[i + j * origin_num]))
+                DFactors.append(DFactor_x[i + j * origin_num])  # 提取该样本的 DFactor 块
 
-            label = shapelet_y[i]  # 获取该样本的标签
+            label = DFactor_y[i]  # 获取该样本的标签
             sample_feature_vector = []  # 用于存储该样本的特征
 
             # 对每个聚类中心计算特征
             for j in range(n_clusters):
-                cluster_shapelet_distances = []  # 记录与该聚类中心的所有 shapelet 距离
-                cluster_shapelet_count = 0  # 记录属于该聚类中心的 shapelet 数量
+                cluster_DFactor_distances = []  # 记录与该聚类中心的所有 DFactor 距离
+                cluster_DFactor_count = 0  # 记录属于该聚类中心的 DFactor 数量
 
-                # 遍历该样本的所有 shapelet，计算与聚类中心 j 的距离
-                for shapelet in shapelets:
-                    #shapelet = np.array(shapelet).reshape(1, -1)  # 确保 shapelet 是二维数组
-                    dists = pairwise_distances(shapelet, cluster_centers, metric=metric)[0]
+                # 遍历该样本的所有 DFactor，计算与聚类中心 j 的距离
+                for DFactor in DFactors:
+                    #DFactor = np.array(DFactor).reshape(1, -1)  # 确保 DFactor 是二维数组
+                    dists = pairwise_distances(DFactor, cluster_centers, metric=metric)[0]
 
-                    # 如果当前 shapelet 属于聚类中心 j，则记录该距离
+                    # 如果当前 DFactor 属于聚类中心 j，则记录该距离
                     if np.argmin(dists) == j:
-                        cluster_shapelet_distances.append(dists[j])
-                        cluster_shapelet_count += 1
+                        cluster_DFactor_distances.append(dists[j])
+                        cluster_DFactor_count += 1
 
                 # 计算聚类中心 j 的特征
-                #avg_distance = np.mean(cluster_shapelet_distances) if cluster_shapelet_count > 0 else 0
+                #avg_distance = np.mean(cluster_DFactor_distances) if cluster_DFactor_count > 0 else 0
                 # 计算聚类中心 j 的特征：平均距离、最小距离、最大距离
-                avg_distance = np.mean(cluster_shapelet_distances) if cluster_shapelet_count > 0 else 0
-                min_distance = np.min(cluster_shapelet_distances) if cluster_shapelet_count > 0 else 0
-                max_distance = np.max(cluster_shapelet_distances) if cluster_shapelet_count > 0 else 0
+                avg_distance = np.mean(cluster_DFactor_distances) if cluster_DFactor_count > 0 else 0
+                min_distance = np.min(cluster_DFactor_distances) if cluster_DFactor_count > 0 else 0
+                max_distance = np.max(cluster_DFactor_distances) if cluster_DFactor_count > 0 else 0
 
                 # 将该聚类中心的特征拼接到特征向量中
                 cluster_feature_vector = np.hstack((
-                    #cluster_shapelet_count,        # 该聚类中心的 shapelet 数量
+                    #cluster_DFactor_count,        # 该聚类中心的 DFactor 数量
                     avg_distance,                  # 该聚类中心的平均距离
                     min_distance,                  # 该聚类中心的最小距离
                     max_distance,                  # 该聚类中心的最大距离
@@ -211,40 +211,40 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
     else:
          # 遍历每个原始样本
         for i in range(origin_num):
-            shapelets = []  # 用于存储当前样本的 shapelet 块
+            DFactors = []  # 用于存储当前样本的 DFactor 块
 
-            # 按跨越 origin_num 的方式提取属于该样本的 shapelet
+            # 按跨越 origin_num 的方式提取属于该样本的 DFactor
             for j in range(smash):
-                shapelets.append(shapelet_x[i + j * origin_num])  # 提取该样本的 shapelet 块
+                DFactors.append(DFactor_x[i + j * origin_num])  # 提取该样本的 DFactor 块
 
-            label = shapelet_y[i]  # 获取该样本的标签
+            label = DFactor_y[i]  # 获取该样本的标签
             sample_feature_vector = []  # 用于存储该样本的特征
 
             # 假设聚类中心的数量等于 smash
             for j in range(smash):
-                shapelet = shapelets[j]  # 第 j 个块
+                DFactor = DFactors[j]  # 第 j 个块
                 cluster_center = cluster_centers[j]  # 第 j 个聚类中心
 
-                # shapelet 和 cluster_center 都是 1D 数组
-                shapelet_reshaped = np.array(shapelet).reshape(-1)  # 将 shapelet 转为 1D 数组
+                # DFactor 和 cluster_center 都是 1D 数组
+                DFactor_reshaped = np.array(DFactor).reshape(-1)  # 将 DFactor 转为 1D 数组
                 cluster_center_reshaped = np.array(cluster_center).reshape(-1)  # 将聚类中心转为 1D 数组
                 n_features = cluster_center_reshaped.shape[0]  # 聚类中心的长度
-                # 检查 shapelet_reshaped 的长度
-                total_length = shapelet_reshaped.shape[0]
+                # 检查 DFactor_reshaped 的长度
+                total_length = DFactor_reshaped.shape[0]
                 if total_length % n_features != 0:
-                    print(f"第 {j} 个块的 shapelet_reshaped 长度不是聚类中心长度的整数倍，无法拆分")
+                    print(f"第 {j} 个块的 DFactor_reshaped 长度不是聚类中心长度的整数倍，无法拆分")
                     continue  # 或者进行其他处理
 
-                n_shapelets = total_length // n_features  # 子数组的数量
+                n_DFactors = total_length // n_features  # 子数组的数量
 
 
                 # 计算距离
                 # 如果 cluster_center_reshaped 只有一个元素，可以直接进行向量化计算
                 if cluster_center_reshaped.size == 1:
                     # 输出距离信息
-                    print(f"第 {j} 个块的 shapelet 是 {shapelet_reshaped}, 聚类中心是 {cluster_center_reshaped}")
+                    print(f"第 {j} 个块的 DFactor 是 {DFactor_reshaped}, 聚类中心是 {cluster_center_reshaped}")
                     distances = pairwise_distances(
-                        shapelet_reshaped.reshape(-1, 1),
+                        DFactor_reshaped.reshape(-1, 1),
                         cluster_center_reshaped.reshape(1, -1),
                         metric=metric
                     ).flatten()
@@ -288,14 +288,14 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
                     ))
                     sample_feature_vector.append(cluster_feature_vector)
                 else:
-                    # 将 shapelet_reshaped 重塑为二维数组
-                    shapelet_reshaped = shapelet_reshaped.reshape(n_shapelets, n_features)
+                    # 将 DFactor_reshaped 重塑为二维数组
+                    DFactor_reshaped = DFactor_reshaped.reshape(n_DFactors, n_features)
                     # 输出拆分结果
-                    print(f"第 {j} 个块的 shapelet 是:\n{shapelet_reshaped}, 聚类中心是: {cluster_center_reshaped}")
+                    print(f"第 {j} 个块的 DFactor 是:\n{DFactor_reshaped}, 聚类中心是: {cluster_center_reshaped}")
 
                     # 如果 cluster_center_reshaped 有多个元素，需要确保维度匹配
                     distances = pairwise_distances(
-                        shapelet_reshaped,
+                        DFactor_reshaped,
                         cluster_center_reshaped.reshape(1, -1),
                         metric=metric
                     ).flatten()
@@ -325,20 +325,20 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
                     # Step 1: 计算差分序列
                     delta_cluster = np.diff(cluster_center_reshaped)  # 形状为 (n_features - 1,)
 
-                    delta_shapelet = np.diff(shapelet_reshaped, axis=1)  # 形状为 (n_shapelets, n_features - 1)
+                    delta_DFactor = np.diff(DFactor_reshaped, axis=1)  # 形状为 (n_DFactors, n_features - 1)
 
                     # Step 2a: 计算趋势方向
                     trend_cluster = np.sign(delta_cluster)  # 形状为 (n_features - 1,)
-                    trend_shapelet = np.sign(delta_shapelet)  # 形状为 (n_shapelets, n_features - 1)
+                    trend_DFactor = np.sign(delta_DFactor)  # 形状为 (n_DFactors, n_features - 1)
 
                     # Step 2b: 计算趋势匹配率
                     trend_cluster_expanded = trend_cluster.reshape(1, -1)  # 扩展维度
-                    trend_matches = (trend_shapelet == trend_cluster_expanded)
-                    trend_match_ratio = np.mean(trend_matches, axis=1)  # 对每个 shapelet 计算匹配率
+                    trend_matches = (trend_DFactor == trend_cluster_expanded)
+                    trend_match_ratio = np.mean(trend_matches, axis=1)  # 对每个 DFactor 计算匹配率
 
                     # Step 2c: 计算趋势相关性
                     trend_correlation = []
-                    for delta_s in delta_shapelet:
+                    for delta_s in delta_DFactor:
                         if np.std(delta_s) == 0 or np.std(delta_cluster) == 0:
                             corr_coef = 0  # 如果标准差为零，相关系数设为零
                         else:
@@ -347,11 +347,11 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
                     trend_correlation = np.array(trend_correlation)
 
                     # Step 2d: 计算趋势距离
-                    trend_distances = np.linalg.norm(delta_shapelet - delta_cluster.reshape(1, -1), axis=1)
+                    trend_distances = np.linalg.norm(delta_DFactor - delta_cluster.reshape(1, -1), axis=1)
                     
                     #斯皮尔曼相关系数
                     trend_spearman = []
-                    for delta_s in delta_shapelet:
+                    for delta_s in delta_DFactor:
                         if np.std(delta_s) == 0 or np.std(delta_cluster) == 0:
                             corr_coef = 0
                         else:
@@ -361,7 +361,7 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
                     
                     #Kendall’s tau
                     trend_kendall = []
-                    for delta_s in delta_shapelet:
+                    for delta_s in delta_DFactor:
                         if np.std(delta_s) == 0 or np.std(delta_cluster) == 0:
                             corr_coef = 0
                         else:
@@ -371,14 +371,14 @@ def compute_feature_vectors(shapelet_x, shapelet_y, cluster_centers, metric='euc
                     
                     #编辑距离（Edit Distance on Real sequence，EDR）
                     trend_dtw = []
-                    for delta_s in delta_shapelet:
+                    for delta_s in delta_DFactor:
                         dist = dtw(delta_s, delta_cluster)
                         trend_dtw.append(dist)
                     trend_dtw = np.array(trend_dtw)
 
                     #模版匹配
                     template_matches = []
-                    for s in shapelet_reshaped:
+                    for s in DFactor_reshaped:
                         # 计算均值和标准差
                         mean_s = np.mean(s)
                         mean_center = np.mean(cluster_center_reshaped)
@@ -520,7 +520,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_segment', type=int, default=12, help='number of segment a time series is divided into')#用到了
     parser.add_argument('--seg_length', type=int, default=30, help='segment length')#用到了
     parser.add_argument('--quantitative', type=str, default='Seq_SSIM',help='quantitative value')#定量，用到了
-    parser.add_argument('--datapath', type=str, default='/data/usr/lhr/Time_shapelet/Time_series',help='数据路径')#定量，用到了
+    parser.add_argument('--datapath', type=str, default='/data/usr/lhr/Time_DFactor/Time_series',help='数据路径')#定量，用到了
     parser.add_argument('--smash', type=int, default=40,help='smash number')#定量，用到了
     parser.add_argument('--n_clusters', type=int, default=5,help='cluster number')#定量，用到了
     parser.add_argument('--dis_metric',choices=['euclidean', 'cosine', 'manhattan'],default='euclidean',help="选择距离度量方法，'euclidean', 'cosine', 或 'manhattan'，默认是 'euclidean'")
@@ -533,7 +533,7 @@ if __name__ == '__main__':
     # 调用
     n_clusters = args.n_clusters  # 聚类的数量
     num = args.smash  # 要加载的文件数量 (segments1 到 segments40)
-    cluster_centers, labels = load_and_cluster_shapelets(n_clusters, num,args.cluster_enable)
+    cluster_centers, labels = load_and_cluster_DFactors(n_clusters, num,args.cluster_enable)
 
     # 如果需要，可以打印聚类中心
     if cluster_centers is not None and args.cluster_enable:
@@ -612,12 +612,12 @@ if __name__ == '__main__':
         float(sum(y_test_total) / len(y_test_total)), len(y_test_total)))
 
 
-     # 对训练集和测试集分别提取 shapelet
-    shapelet_train_x, shapelet_train_y = extract_shapelets(x_train_total, y_train_total, int(x_train_total.shape[1] / args.seg_length), args.seg_length)
-    shapelet_test_x, shapelet_test_y = extract_shapelets(x_test_total, y_test_total, int(x_test_total.shape[1] / args.seg_length), args.seg_length)
+     # 对训练集和测试集分别提取 DFactor
+    DFactor_train_x, DFactor_train_y = extract_DFactors(x_train_total, y_train_total, int(x_train_total.shape[1] / args.seg_length), args.seg_length)
+    DFactor_test_x, DFactor_test_y = extract_DFactors(x_test_total, y_test_total, int(x_test_total.shape[1] / args.seg_length), args.seg_length)
 
     '''
-    dir_path=f'/data/usr/lhr/Time_shapelet/Train/seg/{args.seg}'
+    dir_path=f'/data/usr/lhr/Time_DFactor/Train/seg/{args.seg}'
     # 如果目录不存在，创建目录
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
@@ -627,15 +627,15 @@ if __name__ == '__main__':
     test_x=os.path.join(dir_path, 'test_x.npy')
     test_y=os.path.join(dir_path, 'test_y.npy')
 
-    save_shapelet_to_local(shapelet_train_x, train_x, format='npy')  # 保存为 npy 格式
-    save_shapelet_to_local(shapelet_train_y, train_y, format='npy')  # 保存为 npy 格式
-    save_shapelet_to_local(shapelet_test_x, test_x, format='npy')  # 保存为 npy 格式
-    save_shapelet_to_local(shapelet_test_y, test_y, format='npy')  # 保存为 npy 格式
+    save_DFactor_to_local(DFactor_train_x, train_x, format='npy')  # 保存为 npy 格式
+    save_DFactor_to_local(DFactor_train_y, train_y, format='npy')  # 保存为 npy 格式
+    save_DFactor_to_local(DFactor_test_x, test_x, format='npy')  # 保存为 npy 格式
+    save_DFactor_to_local(DFactor_test_y, test_y, format='npy')  # 保存为 npy 格式
     '''
 
     dis_metric=args.dis_metric
-    train_feature_vectors, train_labels = compute_feature_vectors(shapelet_train_x, shapelet_train_y,cluster_centers, metric=dis_metric,smash=args.smash,cluster=args.cluster_enable)
-    test_feature_vectors, test_labels = compute_feature_vectors(shapelet_test_x, shapelet_test_y, cluster_centers,metric=dis_metric,smash=args.smash,cluster=args.cluster_enable)
+    train_feature_vectors, train_labels = compute_feature_vectors(DFactor_train_x, DFactor_train_y,cluster_centers, metric=dis_metric,smash=args.smash,cluster=args.cluster_enable)
+    test_feature_vectors, test_labels = compute_feature_vectors(DFactor_test_x, DFactor_test_y, cluster_centers,metric=dis_metric,smash=args.smash,cluster=args.cluster_enable)
     # 输出形状
     print(f"features_x 形状: {train_feature_vectors.shape}")
     print(f"labels_y 形状: {train_labels.shape}")
